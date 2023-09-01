@@ -137,8 +137,10 @@ public class CssCompressor {
         }
         css = sb.toString();
 
-
-        css = this.preserveToken(css, "url", "(?i)url\\(\\s*([\"']?)data\\:", true, preservedTokens);
+        // fix: image/svg+xml error. https://github.com/yui/yuicompressor/pull/319/commits/84eb21d880b91dda6fbdba2c7f174031777ee21b
+        //css = this.preserveToken(css, "url", "(?i)url\\(\\s*([\"']?)data\\:", true, preservedTokens);
+        css = this.preserveToken(css, "url", "(?i)url\\(\\s*([\"']?)data\\:\\s*image/svg\\+xml", false, preservedTokens);
+        css = this.preserveToken(css, "url", "(?i)url\\(\\s*([\"']?)data\\:\\s*(?!(image/svg\\+xml))", true, preservedTokens);
         css = this.preserveToken(css, "calc",  "(?i)calc\\(\\s*([\"']?)", false, preservedTokens);
         css = this.preserveToken(css, "progid:DXImageTransform.Microsoft.Matrix",  "(?i)progid:DXImageTransform.Microsoft.Matrix\\s*([\"']?)", false, preservedTokens);
 
@@ -338,7 +340,7 @@ public class CssCompressor {
         } while (!(css.equals(oldCss)));
         
         // We do the same with % but don't replace the 0% in keyframes
-        String oldCss;
+        oldCss = ""; // fix duplicate definition
         p = Pattern.compile("(?i)(: ?)((?:[0-9a-z-.]+ )*?)?(?:0?\\.)?0(?:%)");
         do {
           oldCss = css;
@@ -347,12 +349,12 @@ public class CssCompressor {
         } while (!(css.equals(oldCss)));
         
         //Replace the keyframe 100% step with 'to' which is shorter
-        p = Pattern.compile("(?i)(^|,|{) ?(?:100% ?{)");
+        /* p = Pattern.compile("(?i)(^|,|{) ?(?:100% ?{)");
         do {
           oldCss = css;
           m = p.matcher(css);
           css = m.replaceAll("$1to{");
-        } while (!(css.equals(oldCss)));
+        } while (!(css.equals(oldCss))); */ // fix ant build error
 
         // Replace 0(px,em,%) with 0 inside groups (e.g. -MOZ-RADIAL-GRADIENT(CENTER 45DEG, CIRCLE CLOSEST-SIDE, ORANGE 0%, RED 100%))
         p = Pattern.compile("(?i)\\( ?((?:[0-9a-z-.]+[ ,])*)?(?:0?\\.)?0(?:px|em|%|in|cm|mm|pc|pt|ex|deg|g?rad|m?s|k?hz)");
@@ -522,7 +524,7 @@ public class CssCompressor {
         // Add spaces back in between operators for css calc function
         // https://developer.mozilla.org/en-US/docs/Web/CSS/calc
         // Added by Eric Arnol-Martin (earnolmartin@gmail.com)
-        sb = new StringBuffer();
+        /* sb = new StringBuffer();
         p = Pattern.compile("calc\\([^\\)]*\\)");
         m = p.matcher(css);
         while (m.find()) {
@@ -536,7 +538,7 @@ public class CssCompressor {
             m.appendReplacement(sb, s);
         }
         m.appendTail(sb);
-        css = sb.toString(); 
+        css = sb.toString(); */ // fix: don't Add spaces for css like "calc(var(--bs-gutter-x) * 0.5);"
 
         // Trim the final string (for any leading or trailing white spaces)
         css = css.trim();
